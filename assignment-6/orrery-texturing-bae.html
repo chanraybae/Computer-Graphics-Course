@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+
+attribute vec4 a_vPosition;
+attribute vec4 a_vNormal;
+
+varying vec4 v_fColor;
+
+uniform vec4 u_ambientProduct, u_diffuseProduct, u_specularProduct;
+
+uniform vec4 u_lightPosition;
+uniform float u_shininess;
+
+uniform mat4 u_mvMatrix;
+uniform mat4 u_projMatrix;
+uniform mat3 u_nMatrix;
+
+attribute vec2 a_vTexCoord;
+varying vec2 v_fTexCoord;
+
+void main() {
+    // pos is vertex position in eye coordinates
+    vec3 pos = (u_mvMatrix * a_vPosition).xyz;
+    vec3 L; // vector from vertex position to light source
+
+    // check for directional light
+    if(u_lightPosition.w == 0.0) {
+        L = normalize(u_lightPosition.xyz);
+    } else {
+        L = normalize(u_lightPosition.xyz - pos);
+    }
+    vec3 E = -normalize(pos);
+
+    // halfway vector
+
+    vec3 H = normalize( L + E );
+    vec3 N = normalize(u_nMatrix * a_vNormal.xyz);
+
+    vec4 ambient = u_ambientProduct;
+
+    float Kd = max(dot(L, N), 0.0);
+    vec4 diffuse = Kd * u_diffuseProduct;
+
+    float Ks = pow(max(dot(N, H), 0.0), u_shininess);
+    vec4 specular = Ks * u_specularProduct;
+
+    if(dot(L, N) < 0.0) {
+        specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+
+    gl_Position = u_projMatrix * u_mvMatrix * a_vPosition;
+
+    //v_fColor = ambient + diffuse + specular;
+    v_fColor.rgb = N;
+
+    v_fTexCoord = a_vTexCoord;
+
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+uniform vec3 u_color;
+varying vec4 v_fColor;
+varying vec2 v_fTexCoord;
+uniform sampler2D u_texSampler;
+
+void
+main()
+{
+    vec4 color;
+    color = vec4(u_color, 1.0) * v_fColor;
+    color = texture2D(u_texSampler, v_fTexCoord);
+    gl_FragColor = color;
+
+}
+</script>
+
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="orrery-texturing-bae.js"></script>
+<script type="text/javascript" src="trackball.js"></script>
+</head>
+
+<body>
+<canvas id="gl-canvas" width="1024" height="512">
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+
+<img id = "moonImg" src = "moon.jpg" hidden></img>
+<img id = "earthImg" src = "earth.jpg" hidden></img>
+<img id = "sunImg" src = "sun.jpg" hidden></img>
+<img id = "venusImg" src = "venus.jpg" hidden></img>
+<img id = "mercuryImg" src = "mercury.jpg" hidden></img>
+
+
+<br><br>
+
+
+<button id="incDPF">Inc DPF</button>
+<button id="decDPF">Dec DPF</button>
+
+
+<form>
+    <input type="radio" name="function" id="orbon" checked>Orbit On
+    <input type="radio" name="function" id="orboff">Orbit Off
+</form>
+
+<form>
+    <input type="radio" name="function" id="dayOn" checked>Day On
+    <input type="radio" name="function" id="dayOff">Day Off
+</form>
+
+<form>
+    <input type="radio" name="function" id="animOn" checked>Animation On
+    <input type="radio" name="function" id="animOff">Animation Off
+</form>
+
+<input autocomplete="off" type="range" name="function" value="45" id="redSlider"> Redness Slider
+</br>
+<input autocomplete="off" type="range" name="function" value="45" id="greenSlider"> Greenness Slider
+</br>
+<input autocomplete="off" type="range" name="function" value="45" id="blueSlider"> Blueness Slider
+
+
+<!--- The statistics are printed here. --->
+<p id="printDay"></p>
+
+</body>
+</html>
